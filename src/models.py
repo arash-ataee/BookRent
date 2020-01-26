@@ -12,7 +12,47 @@ conn = mysql.connector.connect(
 
 cur = conn.cursor()
 
-cur.execute("CREATE TABLE IF NOT EXIST ")
+cur.execute("""CREATE TABLE IF NOT EXIST book (
+ID INT AUTO_INCREMENT PRIMARY KEY,
+name VARCHAR(255) NOT NULL,
+category VARCHAR(255) NOT NULL,
+edition VARCHAR(255) NOT NULL,
+author VARCHAR(255) NOT NULL,
+language VARCHAR(255) NOT NULL,
+translator VARCHAR(255),
+status BOOLEAN NOT NULL,
+rent INT,
+FOREIGN KEY (rent) REFERENCES member(ID),
+rented_date DATE
+)""")
+conn.commit()
+
+cur = conn.cursor()
+cur.execute("""CREATE TABLE IF NOT EXIST member(
+ID INT AUTO_INCREMENT PRIMARY KEY,
+name VARCHAR(255) NOT NULL,
+birth_date DATE NOT NULL,
+phone VARCHAR(11),
+username VARCHAR(255) NOT NULL,
+password VARCHAR(255) NOT NULL,
+join_date DATE NOT NULL,
+status BOOLEAN NOT NULL,
+is_admin BOOLEAN NOT NULL
+)""")
+conn.commit()
+
+cur = conn.cursor()
+cur.execute("""CREATE TABLE IF NOT EXIST rent(
+member_id INT NOT NULL,
+FOREIGN KEY (member_id) REFERENCES member(ID),
+book_id INT NOT NULL,
+FOREIGN KEY (book_id) REFERENCES book(ID)
+)""")
+
+
+
+conn.commit()
+conn.close()
 
 
 class Book:
@@ -24,27 +64,67 @@ class Book:
         self.author = author
         self.language = language
         self.translator = translator
-        self.bookID = Book.ID
         self.status = True
         self.rent = None
         self.rentedDate = None
-        Book.book_list[self.bookID] = self
-        Book.ID += 1
+
+    def save(self):
+        co = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            passwd="123212",
+            database="bookRent"
+        )
+        cu = co.cursor()
+        sql = "INSERT INTO book (name, category, edition, author, language, translator, status, rent, rented_date) VALUES (?,?,?,?,?,?,?,?,?)"
+        val = (
+            self.name,
+            self.category,
+            self.edition,
+            self.author,
+            self.language,
+            self.translator,
+            self.status,
+            self.rent,
+            self.rentedDate
+        )
+        cu.execute(sql, val)
 
 
 class Member:
 
-    def __init__(self, name, age, phone, username, password):
+    def __init__(self, name, birth_date, phone, username, password):
         self.name = name
-        self.age = age
+        self.birth_date = birth_date
         self.phone = phone
         self.username = username
         self.password = password
         self.rentedBooks = []
-        self.date = datetime.datetime.now()
+        self.join_date = datetime.datetime.now()
         self.status = 1
         self.log_status = 'logged out'
         self.is_admin = False
+
+    def save(self):
+        co = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            passwd="123212",
+            database="bookRent"
+        )
+        cu = co.cursor()
+        sql = "INSERT INTO member (name, birth_date, phone, username, password, join_date, status, is_admin) VALUES (?,?,?,?,?,?,?,?)"
+        val = (
+            self.name,
+            self.birth_date,
+            self.phone,
+            self.username,
+            self.password,
+            self.join_date,
+            self.status,
+            self.is_admin
+        )
+        cu.execute(sql, val)
 
     def is_staff(self):
         return self.is_admin
